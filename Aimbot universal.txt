@@ -1,0 +1,168 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.Name = "AimbotAdminGUI"
+
+-- Create the main frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+-- Title label
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Text = "Admin Aimbot"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 24
+titleLabel.Parent = frame
+
+-- Code input box
+local codeInput = Instance.new("TextBox")
+codeInput.Size = UDim2.new(0.8, 0, 0.2, 0)
+codeInput.Position = UDim2.new(0.1, 0, 0.2, 0)
+codeInput.PlaceholderText = "Enter Admin Code"
+codeInput.Text = ""
+codeInput.TextColor3 = Color3.fromRGB(0, 0, 0)
+codeInput.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+codeInput.Font = Enum.Font.SourceSans
+codeInput.TextSize = 18
+codeInput.Parent = frame
+
+-- Target Player input box (for partial name or nickname)
+local targetInput = Instance.new("TextBox")
+targetInput.Size = UDim2.new(0.8, 0, 0.2, 0)
+targetInput.Position = UDim2.new(0.1, 0, 0.45, 0)
+targetInput.PlaceholderText = "Enter Part of Player Name"
+targetInput.Text = ""
+targetInput.TextColor3 = Color3.fromRGB(0, 0, 0)
+targetInput.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+targetInput.Font = Enum.Font.SourceSans
+targetInput.TextSize = 18
+targetInput.Parent = frame
+
+-- On Button (Activate Aimbot)
+local onButton = Instance.new("TextButton")
+onButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+onButton.Position = UDim2.new(0.1, 0, 0.7, 0)
+onButton.Text = "Turn Aimbot On"
+onButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+onButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+onButton.Font = Enum.Font.SourceSansBold
+onButton.TextSize = 18
+onButton.Parent = frame
+
+-- Off Button (Deactivate Aimbot)
+local offButton = Instance.new("TextButton")
+offButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+offButton.Position = UDim2.new(0.1, 0, 0.9, 0)
+offButton.Text = "Turn Aimbot Off"
+offButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+offButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+offButton.Font = Enum.Font.SourceSansBold
+offButton.TextSize = 18
+offButton.Parent = frame
+
+-- Make the GUI draggable
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+-- Function to start dragging
+titleLabel.MouseButton1Down:Connect(function(input)
+    dragging = true
+    dragStart = input.Position
+    startPos = frame.Position
+end)
+
+-- Function to drag the GUI
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Stop dragging when the mouse button is released
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Variable to track aimbot state
+local isAimbotActive = false
+local targetPlayer = nil
+
+-- Function to find players whose name contains the target string
+local function getTargetPlayer(partialName)
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player and (string.find(otherPlayer.Name:lower(), partialName:lower()) or string.find(otherPlayer.DisplayName:lower(), partialName:lower())) then
+            return otherPlayer
+        end
+    end
+    return nil
+end
+
+-- Function to get the closest player
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (player.Character.HumanoidRootPart.Position - otherPlayer.Character.HumanoidRootPart.Position).Magnitude
+            if distance < shortestDistance then
+                closestEnemy = otherPlayer
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestEnemy
+end
+
+-- Aimbot lock-on function
+local function lockOnTarget()
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local camera = workspace.CurrentCamera
+        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPlayer.Character.HumanoidRootPart.Position)
+    end
+end
+
+-- Start/Stop aimbot based on the On/Off buttons
+onButton.MouseButton1Click:Connect(function()
+    if codeInput.Text == "123newiscool" then
+        local partialName = targetInput.Text
+        targetPlayer = getTargetPlayer(partialName)
+
+        if targetPlayer then
+            isAimbotActive = true
+            print("Aimbot activated for player: " .. targetPlayer.Name)
+            onButton.Text = "Aimbot On (Targeting " .. targetPlayer.Name .. ")"
+            offButton.Visible = true
+            game:GetService("RunService").RenderStepped:Connect(lockOnTarget)
+        else
+            print("No player found with the given name or nickname.")
+        end
+    else
+        print("Incorrect admin code.")
+    end
+end)
+
+offButton.MouseButton1Click:Connect(function()
+    isAimbotActive = false
+    targetPlayer = nil
+    print("Aimbot deactivated.")
+    onButton.Text = "Turn Aimbot On"
+    offButton.Visible = false
+end)
+
+-- Initially hide the Off button
+offButton.Visible = false
+--[dont use this in games for too long! And the key is 123newiscool if you try leaking this and tell the key the key will be changed]--
